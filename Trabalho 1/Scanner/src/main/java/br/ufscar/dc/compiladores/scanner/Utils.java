@@ -16,6 +16,8 @@ public class Utils {
         add(AlgoritmicaScanner.OP_RELACIONAL);
         add(AlgoritmicaScanner.OP_LOGICO);
         add(AlgoritmicaScanner.ATRIBUICAO);
+        add(AlgoritmicaScanner.PONTO);
+        add(AlgoritmicaScanner.BOOLEANO);
         add(AlgoritmicaScanner.PONTEIRO);
         add(AlgoritmicaScanner.ENDERECO);
         add(AlgoritmicaScanner.ABRE_PARENTESES);

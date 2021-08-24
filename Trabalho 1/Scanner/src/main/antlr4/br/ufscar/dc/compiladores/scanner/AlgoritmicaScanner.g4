@@ -18,11 +18,28 @@ PALAVRA_CHAVE: 'algoritmo'
     | 'fim_para'
     | 'ate'
     | 'enquanto'
-    | 'fim_enquanto';
+    | 'fim_enquanto'
+    | 'caso'
+    | 'fim_caso'
+    | 'seja'
+    | 'tipo'
+    | 'registro'
+    | 'fim_registro'
+    | 'procedimento'
+    | 'fim_procedimento'
+    | 'var'
+    | 'retorne'
+    | 'funcao'
+    | 'fim_funcao'
+    | 'constante';
 
 TIPO: 'inteiro'
     | 'real'
-    | 'literal';
+    | 'literal'
+    | 'logico';
+
+BOOLEANO: 'verdadeiro'
+    | 'falso';
 
 OP_ARITMETICO: '+'
     | '-'
@@ -38,13 +55,16 @@ OP_RELACIONAL: '='
     | '<>';
 
 OP_LOGICO: 'e'
-    | 'ou';
+    | 'ou'
+    | 'nao';
 
 ATRIBUICAO: '<-';
 
 PONTEIRO: '^';
 
 ENDERECO: '&';
+
+PONTO: '.';
 
 DOIS_PONTOS: ':';
 
