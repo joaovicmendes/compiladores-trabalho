@@ -3,6 +3,8 @@ package br.ufscar.dc.compiladores.scanner;
 import org.antlr.v4.runtime.Token;
 
 import java.util.HashSet;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 public class Utils {
@@ -26,7 +28,14 @@ public class Utils {
         add(AlgoritmicaScanner.FECHA_COUCHETE);
     }};
 
+    private static final Map<Integer, String> errorTokens = new HashMap<>() {{
+    }};
+
     public static String stringify(Token tk) {
+        if (Utils.isError(tk.getType())) {
+            return stringifyError(tk);
+        }
+
         StringBuilder tkString = new StringBuilder();
         tkString.append('<');
         tkString.append("'");
@@ -44,5 +53,25 @@ public class Utils {
         tkString.append(">");
 
         return tkString.toString();
+    }
+
+    public static String stringifyError(Token tk) {
+        StringBuilder tkString = new StringBuilder();
+        tkString.append("Linha ");
+        tkString.append(tk.getLine());
+        tkString.append(": ");
+
+        if (tk.getType() == AlgoritmicaScanner.CARACTER_INVALIDO) {
+            tkString.append(tk.getText());
+            tkString.append(" - ");
+        }
+
+        tkString.append(errorTokens.getOrDefault(tk.getType(), ""));
+
+        return tkString.toString();
+    }
+
+    public static Boolean isError(int tkType) {
+        return errorTokens.containsKey(tkType);
     }
 }

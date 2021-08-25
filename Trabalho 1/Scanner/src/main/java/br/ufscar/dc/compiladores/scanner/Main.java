@@ -27,21 +27,24 @@ public class Main {
         }
 
         // Lista de Tokens gerados
-        List<Token> tokens = new ArrayList<>();
+        List<String> tokens = new ArrayList<>();
 
         // Analisador Léxico gerado pelo Antlr
         AlgoritmicaScanner scanner = new AlgoritmicaScanner(cs);
         Token currentToken = scanner.nextToken();
 
         while (currentToken.getType() != Token.EOF) {
-            tokens.add(currentToken);
+            tokens.add(Utils.stringify(currentToken));
+            if (Utils.isError(currentToken.getType())) {
+                break;
+            } 
             currentToken = scanner.nextToken();
         }
 
         // Escrevendo tokens encontrados no arquivo de saída
         try (FileWriter writer = new FileWriter(args[1])) {
-            for (Token token : tokens) {
-                writer.write(Utils.stringify(token) + System.lineSeparator());
+            for (String token : tokens) {
+                writer.write(token + System.lineSeparator());
             }
         } catch (IOException exception) {
             System.out.println("Erro: Não foi possível abrir o arquivo '" + args[1] + "'");

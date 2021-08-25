@@ -2,3 +2,4 @@
 target
 output.txt
 .antlr
+.DS_Store
