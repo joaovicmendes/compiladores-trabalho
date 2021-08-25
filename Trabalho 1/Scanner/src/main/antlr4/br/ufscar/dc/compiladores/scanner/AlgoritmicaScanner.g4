@@ -90,3 +90,10 @@ IDENT: ('a'..'z'|'A'..'Z')('a'..'z'|'A'..'Z'|'0'..'9'|'_')*;
 CADEIA: '"' ( ~('\n'|'\r') )*? '"';
 
 COMENTARIO: '{' ( ~('\n'|'\r') )*? '}' -> skip;
+
+// Erros léxicos
+CADEIA_NAO_FECHADA: ('"') ~('"')*? ('\n'|'\r');
+
+COMENTARIO_NAO_FECHADO: '{' ~('}')*? ('\n'|'\r');
+
+CARACTER_INVALIDO: .+?;

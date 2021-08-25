@@ -29,6 +29,9 @@ public class Utils {
     }};
 
     private static final Map<Integer, String> errorTokens = new HashMap<>() {{
+        put(AlgoritmicaScanner.COMENTARIO_NAO_FECHADO, "comentario nao fechado");
+        put(AlgoritmicaScanner.CADEIA_NAO_FECHADA, "cadeia literal nao fechada");
+        put(AlgoritmicaScanner.CARACTER_INVALIDO, "simbolo nao identificado");
     }};
 
     public static String stringify(Token tk) {
