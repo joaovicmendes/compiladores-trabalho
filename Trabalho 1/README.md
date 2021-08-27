@@ -12,12 +12,14 @@ Para executar o código é preciso ter instalado:
 - Java 11.0.11
 - Maven 3.8.2
 
-Compilar e gerar um arquivo `jar`:
+Abra o projeto em um terminal. Navegue para a pasta `Scanner/`.
+
+Para compilar e gerar um arquivo `jar`, execute o comando:
 ```
 mvn clean compile assembly:single
 ```
 
-Para executar:
+Para executar o programa:
 ```
 java -jar target/Scanner-1.0-SNAPSHOT-jar-with-dependencies.jar <entrada> <saida>
 ```
