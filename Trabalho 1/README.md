@@ -23,3 +23,10 @@ java -jar target/Scanner-1.0-SNAPSHOT-jar-with-dependencies.jar <entrada> <saida
 ```
 
 ## Estruturação do código
+O trabalho 1 possui três arquivos importantes.
+- [`src/main/antlr4/.../AlgoritmicaScanner.g4`](https://github.com/joaovicmendes/compiladores-trabalho/blob/main/Trabalho%201/Scanner/src/main/antlr4/br/ufscar/dc/compiladores/scanner/AlgoritmicaScanner.g4): é o arquivo que contém a descrição dos Tokens da Linguagem Algoritmica. A partir dessas descrições, o ANTLR vai gerar automaticamente um analisador léxico que identifica tais Tokens.
+- [`src/main/java/.../scanner/Main.java`](https://github.com/joaovicmendes/compiladores-trabalho/blob/main/Trabalho%201/Scanner/src/main/java/br/ufscar/dc/compiladores/scanner/Main.java): essa classe é o ponto de entrada do programa. É responsável por orquestrar o processo de
+  1. Abrir o arquivo de entrada
+  2. Ler seus conteúdos, e repassar para o analisador léxico
+  3. Escrever os tokens gerados no arquivo de saída.
+- [`src/main/java/.../scanner/Utils.java`](https://github.com/joaovicmendes/compiladores-trabalho/blob/main/Trabalho%201/Scanner/src/main/java/br/ufscar/dc/compiladores/scanner/Utils.java): contém alguns utilitários que simplificam os processos de tranformar os Tokens em cadeias de caracteres (para serem escritos nos arquivos) e para identificar Tokens de erros.  
