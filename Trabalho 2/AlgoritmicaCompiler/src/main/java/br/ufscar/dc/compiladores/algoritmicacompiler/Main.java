@@ -1,14 +1,14 @@
 package br.ufscar.dc.compiladores.algoritmicacompiler;
 
 import java.io.IOException;
-import java.io.FileWriter;
-import java.util.ArrayList;
-import java.util.List;
+import java.io.PrintWriter;
 
-import br.ufscar.dc.compiladores.scanner.AlgoritmicaScanner;
+import br.ufscar.dc.compiladores.parser.AlgoritmicaParser;
+import br.ufscar.dc.compiladores.parser.AlgoritmicaLexer;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
-import org.antlr.v4.runtime.Token;
+import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 
 public class Main {
     public static void main(String[] args) {
@@ -18,7 +18,7 @@ public class Main {
             System.out.println("    java -jar AlgoritmicaCompiler.jar <input_file> <output_file>");
         }
 
-        // Criando estrutura para ler arquivo contendo código-fonte
+        // Leitura de arquivo contendo código-fonte
         CharStream cs;
         try {
             cs = CharStreams.fromFileName(args[0]);
@@ -27,28 +27,21 @@ public class Main {
             return;
         }
 
-        // Lista de Tokens gerados
-        List<String> tokens = new ArrayList<>();
+        // Criação de analisador léxico e sintático
+        AlgoritmicaLexer scanner = new AlgoritmicaLexer(cs);
+        CommonTokenStream cts = new CommonTokenStream(scanner);
+        AlgoritmicaParser parser = new AlgoritmicaParser(cts);
 
-        // Analisador Léxico gerado pelo Antlr
-        AlgoritmicaScanner scanner = new AlgoritmicaScanner(cs);
-        Token currentToken = scanner.nextToken();
+        try (PrintWriter writer = new PrintWriter(args[1])) {
+            // Adicionado tratamento de erros customizado
+            AlgoritmicaErrorListener customErrListener = new AlgoritmicaErrorListener(writer);
+            parser.removeErrorListeners();
+            parser.addErrorListener(customErrListener);
 
-        while (currentToken.getType() != Token.EOF) {
-            tokens.add(Utils.stringify(currentToken));
-            if (Utils.isError(currentToken.getType())) {
-                break;
-            } 
-            currentToken = scanner.nextToken();
-        }
+            parser.programa();
 
-        // Escrevendo tokens encontrados no arquivo de saída
-        try (FileWriter writer = new FileWriter(args[1])) {
-            for (String token : tokens) {
-                writer.write(token + System.lineSeparator());
-            }
         } catch (IOException exception) {
             System.out.println("Erro: Não foi possível abrir o arquivo '" + args[1] + "'");
-        }
+        } catch (ParseCancellationException ignored) {}
     }
 }

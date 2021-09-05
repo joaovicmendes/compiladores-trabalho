@@ -101,11 +101,11 @@ CARACTER_INVALIDO: .+?;
 
 
 // Gramatica Analisador Sintático
-programa: declaracoes 'algoritmo' corpo 'fim_algoritmo';
+programa: declaracoes 'algoritmo' corpo 'fim_algoritmo' EOF;
 
-declaracoes: dec1_local_global*;
+declaracoes: decl_local_global*;
 
-dec1_local_global: declaracao_local | declaracao_global;
+decl_local_global: declaracao_local | declaracao_global;
 
 declaracao_local: 'declare' variavel 
                 | 'constante' IDENT ':' tipo_basico '=' valor_constante
@@ -113,7 +113,7 @@ declaracao_local: 'declare' variavel
 
 variavel: identificador (',' identificador)* ':' tipo;
 
-identificador: IDENT ('.' IDENT)* ':' tipo;
+identificador: IDENT ('.' IDENT)* dimensao;
 
 dimensao: ('[' exp_aritmetica ']')*;
 
@@ -143,9 +143,9 @@ corpo: declaracao_local* cmd*;
 cmd: cmdLeia | cmdEscreva | cmdSe | cmdCaso | cmdPara | cmdEnquanto
     | cmdFaca | cmdAtribuicao | cmdChamada | cmdRetorne;
 
-cmdLeia: 'leia' '(' '^'? identificador (',' '^'? identificador)* '}';
+cmdLeia: 'leia' '(' '^'? identificador (',' '^'? identificador)* ')';
 
-cmdEscreva: 'escreva' '(' expressao (',' expressao)* '}';
+cmdEscreva: 'escreva' '(' expressao (',' expressao)* ')';
 
 cmdSe: 'se' expressao 'entao' cmd* ('senao' cmd*)? 'fim_se';
 
@@ -201,7 +201,7 @@ op_relacional: '=' | '<>' | '>=' | '<=' | '>' | '<';
 
 expressao: termo_logico (op_logico_1 termo_logico)*;
 
-termo_logico: fator_logico (op_logico_2 termo_logico)*;
+termo_logico: fator_logico (op_logico_2 fator_logico)*;
 
 fator_logico: 'nao'? parcela_logica;
 
