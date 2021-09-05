@@ -76,9 +76,9 @@ ABRE_PARENTESES: '(';
 
 FECHA_PARENTESES: ')';
 
-ABRE_COUCHETE: '[';
+ABRE_COLCHETE: '[';
 
-FECHA_COUCHETE: ']';
+FECHA_COLCHETE: ']';
 
 WS: ( ' '
     | '\t'

@@ -25,8 +25,8 @@ public class Utils {
         add(AlgoritmicaScanner.ENDERECO);
         add(AlgoritmicaScanner.ABRE_PARENTESES);
         add(AlgoritmicaScanner.FECHA_PARENTESES);
-        add(AlgoritmicaScanner.ABRE_COUCHETE);
-        add(AlgoritmicaScanner.FECHA_COUCHETE);
+        add(AlgoritmicaScanner.ABRE_COLCHETE);
+        add(AlgoritmicaScanner.FECHA_COLCHETE);
     }};
 
     /* Conjunto que representa os tokens de erro da linguagem. */
