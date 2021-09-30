@@ -1,0 +1,10 @@
+<'algoritmo','algoritmo'>
+<'declare','declare'>
+<'quilometragem',IDENT>
+<',',','>
+<'abastecimento1',IDENT>
+<',',','>
+<'abastecimento2',IDENT>
+<':',':'>
+<'real','real'>
+Linha 7: } - simbolo nao identificado

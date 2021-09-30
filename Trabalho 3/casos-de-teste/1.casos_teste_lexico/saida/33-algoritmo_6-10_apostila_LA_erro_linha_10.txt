@@ -1,0 +1,26 @@
+<'algoritmo','algoritmo'>
+<'declare','declare'>
+<'i',IDENT>
+<',',','>
+<'termo',IDENT>
+<',',','>
+<'baseFatorial',IDENT>
+<',',','>
+<'fatorial',IDENT>
+<',',','>
+<'numeroTermos',IDENT>
+<':',':'>
+<'inteiro','inteiro'>
+<'declare','declare'>
+<'cosseno',IDENT>
+<',',','>
+<'angulo',IDENT>
+<':',':'>
+<'real','real'>
+<'leia','leia'>
+<'(','('>
+<'angulo',IDENT>
+<',',','>
+<'numeroTermos',IDENT>
+<')',')'>
+Linha 10: comentario nao fechado
