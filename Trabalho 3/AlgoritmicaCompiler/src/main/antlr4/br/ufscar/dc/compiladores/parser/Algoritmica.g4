@@ -107,25 +107,25 @@ declaracoes: decl_local_global*;
 
 decl_local_global: declaracao_local | declaracao_global;
 
-declaracao_local: 'declare' variavel 
-                | 'constante' IDENT ':' tipo_basico '=' valor_constante
-                | 'tipo' IDENT ':' tipo;
+declaracao_local: isVariable='declare' variavel
+                | isConstant='constante' IDENT ':' tipo_basico '=' valor_constante
+                | isType='tipo' IDENT ':' tipo;
 
 variavel: identificador (',' identificador)* ':' tipo;
 
-identificador: IDENT ('.' IDENT)* dimensao;
+identificador: ident1=IDENT (pontos+='.' outrosIdent+=IDENT)* dimensao;
 
 dimensao: ('[' exp_aritmetica ']')*;
 
 tipo: registro | tipo_estendido;
 
-tipo_basico: 'literal' | 'inteiro' | 'real' | 'logico';
+tipo_basico: literal='literal' | inteiro='inteiro' | real='real' | logico='logico';
 
 tipo_basico_ident: tipo_basico | IDENT;
 
 tipo_estendido: '^'? tipo_basico_ident;
 
-valor_constante: CADEIA | NUM_INT | NUM_REAL | 'verdadeiro' | 'falso';
+valor_constante: CADEIA | NUM_INT | NUM_REAL | verdadeiro='verdadeiro' | falso='falso';
 
 registro: 'registro' variavel* 'fim_registro';
 

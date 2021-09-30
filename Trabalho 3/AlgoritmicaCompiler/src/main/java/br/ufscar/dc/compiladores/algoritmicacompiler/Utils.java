@@ -3,10 +3,13 @@ package br.ufscar.dc.compiladores.algoritmicacompiler;
 import br.ufscar.dc.compiladores.parser.AlgoritmicaLexer;
 import org.antlr.v4.runtime.Token;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class Utils {
+    public static List<String> semanticErrors = new ArrayList<>();
 
     /* Conjunto que representa os tokens de erro da linguagem. */
     private static final Map<Integer, String> errorTokens = new HashMap<>() {{
@@ -53,5 +56,24 @@ public class Utils {
         }
 
         return tkString.toString();
+    }
+
+    /* Conjunto que representa os tipos da linguagem. */
+    private static final Map<String, SymbolTable.Type> typeMap = new HashMap<>() {{
+        put("literal", SymbolTable.Type.LITERAL);
+        put("inteiro", SymbolTable.Type.INTEIRO);
+        put("real", SymbolTable.Type.REAL);
+        put("logico", SymbolTable.Type.LOGICO);
+    }};
+
+    /* Função que recebe uma String e retorna o tipo equivalente. */
+    public static SymbolTable.Type mapStrToType(String type) {
+        return typeMap.getOrDefault(type, SymbolTable.Type.INVALIDO);
+    }
+
+    /* Função que recebe o token onde um erro aconteceu e uma mensagem e adiciona a
+       lista de erros semânticos. */
+    public static void addSemanticError(Token tk, String msg) {
+        semanticErrors.add(String.format("Linha %d: %s", tk.getLine(), msg));
     }
 }

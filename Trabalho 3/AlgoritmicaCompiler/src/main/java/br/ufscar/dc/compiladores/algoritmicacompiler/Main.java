@@ -38,8 +38,14 @@ public class Main {
             parser.removeErrorListeners();
             parser.addErrorListener(customErrListener);
 
-            parser.programa();
+            // Analise sintática
+            AlgoritmicaParser.ProgramaContext tree = parser.programa();
+            AlgoritmicaVisitor semantic = new AlgoritmicaVisitor();
+            semantic.visitPrograma(tree);
 
+            // Imprimindo erros
+            Utils.semanticErrors.forEach(writer::println);
+            writer.println("Fim da compilacao");
         } catch (IOException exception) {
             System.out.println("Erro: Não foi possível abrir o arquivo '" + args[1] + "'");
         } catch (ParseCancellationException ignored) {}
