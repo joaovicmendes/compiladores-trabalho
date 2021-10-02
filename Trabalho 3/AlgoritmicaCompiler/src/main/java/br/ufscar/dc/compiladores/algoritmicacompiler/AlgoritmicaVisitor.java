@@ -5,11 +5,14 @@ import br.ufscar.dc.compiladores.parser.AlgoritmicaParser;
 import org.antlr.v4.runtime.Token;
 
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 
 public class AlgoritmicaVisitor extends AlgoritmicaBaseVisitor<SymbolTable.Type> {
     Scope scopeStack = new Scope();
     HashSet<String> constants = new HashSet<>();
+    RoutineTable routines = new RoutineTable();
+    List<SymbolTable.Type> routineParams = new LinkedList<>();
 
     @Override
     public SymbolTable.Type visitDeclaracao_local(AlgoritmicaParser.Declaracao_localContext ctx) {
@@ -54,6 +57,66 @@ public class AlgoritmicaVisitor extends AlgoritmicaBaseVisitor<SymbolTable.Type>
                 SymbolTable typeTable = scopeStack.pop();
                 currentScope.add(ident, SymbolTable.Type.REGISTRO, typeTable);
             }
+        }
+        return null;
+    }
+
+    @Override
+    public SymbolTable.Type visitDeclaracao_global(AlgoritmicaParser.Declaracao_globalContext ctx) {
+        SymbolTable currentScope = scopeStack.top();
+        if (ctx.isProcedure != null) {
+            String ident = ctx.IDENT().getText();
+
+            if (constants.contains(ident)) {
+                erroIdentificadorDeclarado(ident, ctx.IDENT().getSymbol());
+            } else {
+                currentScope.add(ident, SymbolTable.Type.PROCEDIMENTO);
+                constants.add(ident);
+            }
+
+            routineParams.clear(); // Esvazia lista de parâmetros globais
+            if (ctx.parametros() != null) {
+                visitParametros(ctx.parametros());
+            }
+            routines.add(ident, null, new LinkedList<>(routineParams));
+
+            scopeStack.push();
+            for (var decl : ctx.declaracao_local()) {
+                visitDeclaracao_local(decl);
+            }
+            for (var cmd : ctx.cmd()) {
+                visitCmd(cmd);
+            }
+            scopeStack.pop();
+            return SymbolTable.Type.PROCEDIMENTO;
+        }
+        else if (ctx.isFunction != null) {
+            SymbolTable.Type returnType = visitTipo_estendido(ctx.tipo_estendido());
+            String ident = ctx.IDENT().getText();
+
+            if (constants.contains(ident)) {
+                erroIdentificadorDeclarado(ident, ctx.IDENT().getSymbol());
+            } else {
+                currentScope.add(ident, SymbolTable.Type.FUNCAO);
+                constants.add(ident);
+            }
+
+            routineParams.clear(); // Esvazia lista de parâmetros globais
+            if (ctx.parametros() != null) {
+                visitParametros(ctx.parametros());
+            }
+            routines.add(ident, returnType, new LinkedList<>(routineParams));
+
+            scopeStack.push();
+            for (var decl : ctx.declaracao_local()) {
+                visitDeclaracao_local(decl);
+            }
+            for (var cmd : ctx.cmd()) {
+                visitCmd(cmd);
+            }
+            scopeStack.pop();
+            return SymbolTable.Type.FUNCAO;
+
         }
         return null;
     }
@@ -117,7 +180,7 @@ public class AlgoritmicaVisitor extends AlgoritmicaBaseVisitor<SymbolTable.Type>
                 }
             }
         }
-        return SymbolTable.Type.INVALIDO;
+        return null;
     }
 
     @Override
@@ -187,7 +250,7 @@ public class AlgoritmicaVisitor extends AlgoritmicaBaseVisitor<SymbolTable.Type>
     public SymbolTable.Type visitCmdLeia(AlgoritmicaParser.CmdLeiaContext ctx) {
         for (var ident : ctx.identificador()) {
             SymbolTable.Type identType = visitIdentificador(ident);
-            if (identType == SymbolTable.Type.INVALIDO) {
+            if (identType == null) {
                 erroIdentificadorNaoDeclarado(ident.getText(), ident.getStart());
             }
         }
@@ -242,18 +305,53 @@ public class AlgoritmicaVisitor extends AlgoritmicaBaseVisitor<SymbolTable.Type>
             return SymbolTable.Type.INVALIDO;
         }
         else /* if (ctx.identFuncao != null) */ {
-            // TODO: tratar funções e procedimentos
+            if (!routines.contains(ctx.identFuncao.getText())) {
+                erroIdentificadorNaoDeclarado(ctx.identFuncao.getText(), ctx.identFuncao);
+                return SymbolTable.Type.INVALIDO;
+            }
+            List<SymbolTable.Type> expectedParams = routines.get(ctx.IDENT().getText()).paramTypes;
+            List<SymbolTable.Type> receivedParams = new LinkedList<>();
+
+            receivedParams.add(visitExpressao(ctx.exp1));
+            for (var expr : ctx.outrasExp) {
+                receivedParams.add(visitExpressao(expr));
+            }
+
+            if (expectedParams.size() != receivedParams.size()) {
+                erroIncompatibilidadeParametros(ctx.identFuncao.getText(), ctx.identFuncao);
+                return SymbolTable.Type.INVALIDO;
+            }
+
+            for (int i = 0; i < expectedParams.size(); i++) {
+                if (expectedParams.get(i) != receivedParams.get(i)) {
+                    Token fault;
+                    if (i == 0) {
+                        fault = ctx.exp1.getStart();
+                    } else {
+                        fault = ctx.outrasExp.get(i-1).getStart();
+                    }
+                    erroIncompatibilidadeParametros(ctx.identFuncao.getText(), fault);
+                }
+            }
+
+            if (routines.get(ctx.identFuncao.getText()).isFunction) {
+                return routines.get(ctx.identFuncao.getText()).returnType;
+            }
         }
-        return null;
+        return SymbolTable.Type.INVALIDO;
     }
 
     @Override
     public SymbolTable.Type visitCmdAtribuicao(AlgoritmicaParser.CmdAtribuicaoContext ctx) {
         SymbolTable.Type identType = visitIdentificador(ctx.identificador());
-        if (identType == SymbolTable.Type.INVALIDO) {
+        if (identType == null) {
             erroIdentificadorNaoDeclarado(ctx.identificador().getText(), ctx.identificador().getStart());
         }
-        return super.visitCmdAtribuicao(ctx);
+
+        SymbolTable.Type exprType = visitExpressao(ctx.expressao());
+
+
+        return null;
     }
 
     @Override
@@ -433,18 +531,43 @@ public class AlgoritmicaVisitor extends AlgoritmicaBaseVisitor<SymbolTable.Type>
         return lValue;
     }
 
+    @Override
+    public SymbolTable.Type visitParametro(AlgoritmicaParser.ParametroContext ctx) {
+        int numberOfParams = ctx.identificador().size();
+        SymbolTable.Type paramType = visitTipo_estendido(ctx.tipo_estendido());
+
+        SymbolTable currentScope = scopeStack.top();
+        SymbolTable structTable = null;
+        if (paramType != SymbolTable.Type.REGISTRO) {
+            for (var scope : scopeStack.toList()) {
+                if (scope.contains(ctx.tipo_estendido().getText())) {
+                    structTable = scope.get(ctx.tipo_estendido().getText()).childTable;
+                }
+            }
+        }
+        for (var ident : ctx.identificador()) {
+            currentScope.add(ident.getText(), paramType, structTable);
+        }
+        for (int i = 0; i < numberOfParams; i++) {
+            routineParams.add(paramType);
+        }
+
+        return paramType;
+    }
+
     public void erroIdentificadorDeclarado(String ident, Token tk) {
         Utils.addSemanticError(tk, String.format("identificador %s ja declarado anteriormente", ident));
-        scopeStack.print();
     }
 
     public void erroIdentificadorNaoDeclarado(String ident, Token tk) {
         Utils.addSemanticError(tk, String.format("identificador %s nao declarado", ident));
-        scopeStack.print();
     }
 
     public void erroTipoNaoDeclarado(String ident, Token tk) {
         Utils.addSemanticError(tk, String.format("tipo %s nao declarado", ident));
-        scopeStack.print();
+    }
+
+    public void erroIncompatibilidadeParametros(String ident, Token tk) {
+        Utils.addSemanticError(tk, String.format("incompatibilidade de parametros na chamada de %s", ident));
     }
 }

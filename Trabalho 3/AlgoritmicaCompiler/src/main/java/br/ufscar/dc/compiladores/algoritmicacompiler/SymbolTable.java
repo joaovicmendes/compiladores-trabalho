@@ -11,6 +11,8 @@ public class SymbolTable {
         REAL,
         LOGICO,
         REGISTRO,
+        FUNCAO,
+        PROCEDIMENTO,
     }
 
     private final Map<String, SymbolTableEntry> table;
