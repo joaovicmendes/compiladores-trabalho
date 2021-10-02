@@ -20,4 +20,13 @@ public class SymbolTableEntry {
         this.name = name;
         this.childTable = childTable;
     }
+
+    public void print() {
+        System.out.println(name + " " + type);
+        if (childTable != null) {
+            System.out.println("  subtabela");
+            childTable.print();
+            System.out.println("  fim-subtabela");
+        }
+    }
 }

@@ -173,11 +173,11 @@ numero_intervalo: op_unario? NUM_INT ('..' op_unario? NUM_INT)?;
 
 op_unario: '-';
 
-exp_aritmetica: termo (op1 termo)*;
+exp_aritmetica: termo1=termo (ops+=op1 outrosTermos+=termo)*;
 
-termo: fator (op2 fator)*;
+termo: fator1=fator (ops+=op2 outrosFatores+=fator)*;
 
-fator: parcela (op3 parcela)*;
+fator: parcela1=parcela (ops+=op3 outrasParcelas+=parcela)*;
 
 op1: '+' | '-';
 
@@ -187,25 +187,25 @@ op3: '%';
 
 parcela: op_unario? parcela_unario | parcela_nao_unario;
 
-parcela_unario: '^'? identificador
-                | IDENT '(' expressao (',' expressao)* ')'
+parcela_unario: isPointer='^'? ident=identificador
+                | identFuncao=IDENT '(' exp1=expressao (',' outrasExp+=expressao)* ')'
                 | NUM_INT
                 | NUM_REAL
-                | '(' expressao ')';
+                | '(' expParentesis=expressao ')';
 
 parcela_nao_unario: '&' identificador | CADEIA;
 
-exp_relacional: exp_aritmetica (op_relacional exp_aritmetica)?;
+exp_relacional: expressao1=exp_aritmetica (operadores+=op_relacional outrasExpressoes+=exp_aritmetica)?;
 
 op_relacional: '=' | '<>' | '>=' | '<=' | '>' | '<';
 
-expressao: termo_logico (op_logico_1 termo_logico)*;
+expressao: termo1=termo_logico (operadores+=op_logico_1 outrosTermos+=termo_logico)*;
 
-termo_logico: fator_logico (op_logico_2 fator_logico)*;
+termo_logico: fator1=fator_logico (operadores+=op_logico_2 outrosFatores+=fator_logico)*;
 
-fator_logico: 'nao'? parcela_logica;
+fator_logico: not='nao'? parcela_logica;
 
-parcela_logica: ('verdadeiro' | 'falso')
+parcela_logica: logica=('verdadeiro' | 'falso')
                 | exp_relacional;
 
 op_logico_1: 'ou';

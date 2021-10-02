@@ -4,10 +4,12 @@ import br.ufscar.dc.compiladores.parser.AlgoritmicaBaseVisitor;
 import br.ufscar.dc.compiladores.parser.AlgoritmicaParser;
 import org.antlr.v4.runtime.Token;
 
+import java.util.HashSet;
 import java.util.List;
 
 public class AlgoritmicaVisitor extends AlgoritmicaBaseVisitor<SymbolTable.Type> {
     Scope scopeStack = new Scope();
+    HashSet<String> constants = new HashSet<>();
 
     @Override
     public SymbolTable.Type visitDeclaracao_local(AlgoritmicaParser.Declaracao_localContext ctx) {
@@ -22,8 +24,9 @@ public class AlgoritmicaVisitor extends AlgoritmicaBaseVisitor<SymbolTable.Type>
                 for (var ident : ctx.variavel().identificador()) {
                     currentScope.add(ident.getText(), SymbolTable.Type.REGISTRO, structScope);
                 }
+            } else {
+                visitVariavel(ctx.variavel());
             }
-            visitVariavel( ctx.variavel() );
         }
         // Se estiver declarando uma constante
         else if (ctx.isConstant != null) {
@@ -31,10 +34,11 @@ public class AlgoritmicaVisitor extends AlgoritmicaBaseVisitor<SymbolTable.Type>
             SymbolTable.Type type = Utils.mapStrToType(ctx.tipo_basico().getText());
             SymbolTable currentScope = scopeStack.top();
 
-            if (currentScope.contains(ident)) {
+            if (currentScope.contains(ident) || constants.contains(ident)) {
                 erroIdentificadorDeclarado(ident, ctx.IDENT().getSymbol());
             } else {
                 currentScope.add(ident, type);
+                constants.add(ident);
             }
         }
         // Se estiver declarando um tipo customizado
@@ -60,8 +64,8 @@ public class AlgoritmicaVisitor extends AlgoritmicaBaseVisitor<SymbolTable.Type>
         String identName;
         SymbolTable.Type type = visitTipo(ctx.tipo());
         for (var ident : ctx.identificador() ) {
-            identName = ident.getText();
-            if (currentScope.contains(identName)) {
+            identName = ident.ident1.getText();
+            if (currentScope.contains(identName) || constants.contains(identName)) {
                 erroIdentificadorDeclarado(identName, ident.getStart());
             } else {
                 if (type == SymbolTable.Type.REGISTRO) {
@@ -83,28 +87,37 @@ public class AlgoritmicaVisitor extends AlgoritmicaBaseVisitor<SymbolTable.Type>
 
     @Override
     public SymbolTable.Type visitIdentificador(AlgoritmicaParser.IdentificadorContext ctx) {
-        SymbolTableEntry idEntry = scopeStack.top().get(ctx.ident1.getText());
-        if (idEntry == null) {
-            erroIdentificadorNaoDeclarado(ctx.getText(), ctx.getStart());
-            return SymbolTable.Type.INVALIDO;
-        }
-
-        SymbolTable.Type type = idEntry.type;
-
-        if (ctx.pontos.size() > 0) {
-            SymbolTable childTable = idEntry.childTable;
-            for (var ident : ctx.outrosIdent) {
-                if (!childTable.contains(ident.getText())) {
-                    erroIdentificadorNaoDeclarado(ctx.getText(), ctx.getStart());
-                    return SymbolTable.Type.INVALIDO;
+        List<SymbolTable> scopes = scopeStack.toList();
+        for (var scope : scopes) {
+            if (scope.contains(ctx.ident1.getText())) {
+                SymbolTableEntry ident = scope.get(ctx.ident1.getText());
+                // Se não for um registro, retorna o tipo
+                if (ident.type != SymbolTable.Type.REGISTRO) {
+                    return ident.type;
                 } else {
-                    type = childTable.get(ident.getText()).type;
-                    childTable = childTable.get(ident.getText()).childTable;
+                    // Se for um registro, retorna o tipo do último campo sendo acessado
+                    SymbolTable.Type type = SymbolTable.Type.REGISTRO;
+
+                    if (ctx.pontos.size() > 0) {
+                        SymbolTable childTable = ident.childTable;
+                        for (var subIdent : ctx.outrosIdent) {
+                            if (childTable == null) {
+                                return SymbolTable.Type.INVALIDO;
+                            }
+                            if (!childTable.contains(subIdent.getText())) {
+                                erroIdentificadorNaoDeclarado(ctx.getText(), ctx.getStart());
+                                return SymbolTable.Type.REGISTRO;
+                            } else {
+                                type = childTable.get(subIdent.getText()).type;
+                                childTable = childTable.get(subIdent.getText()).childTable;
+                            }
+                        }
+                    }
+                    return type;
                 }
             }
         }
-
-        return type;
+        return SymbolTable.Type.INVALIDO;
     }
 
     @Override
@@ -173,7 +186,10 @@ public class AlgoritmicaVisitor extends AlgoritmicaBaseVisitor<SymbolTable.Type>
     @Override
     public SymbolTable.Type visitCmdLeia(AlgoritmicaParser.CmdLeiaContext ctx) {
         for (var ident : ctx.identificador()) {
-            visitIdentificador(ident);
+            SymbolTable.Type identType = visitIdentificador(ident);
+            if (identType == SymbolTable.Type.INVALIDO) {
+                erroIdentificadorNaoDeclarado(ident.getText(), ident.getStart());
+            }
         }
 
         return null;
@@ -181,32 +197,254 @@ public class AlgoritmicaVisitor extends AlgoritmicaBaseVisitor<SymbolTable.Type>
 
     @Override
     public SymbolTable.Type visitParcela_unario(AlgoritmicaParser.Parcela_unarioContext ctx) {
-        if (ctx.IDENT() != null) {
-            SymbolTableEntry entry = null;
+        if (ctx.NUM_INT() != null) {
+            return SymbolTable.Type.INTEIRO;
+        }
+        else if (ctx.NUM_REAL() != null) {
+            return SymbolTable.Type.REAL;
+        }
+        else if (ctx.NUM_REAL() != null) {
+            return SymbolTable.Type.REAL;
+        }
+        else if (ctx.expParentesis != null) {
+            return visitExpressao(ctx.expParentesis);
+        }
+        else if (ctx.ident != null) {
             for (var scope : scopeStack.toList()) {
-                if (scope.contains(ctx.IDENT().getText())) {
-                    entry = scope.get(ctx.IDENT().getText());
+                if (scope.contains(ctx.ident.ident1.getText())) {
+                    SymbolTableEntry ident = scope.get(ctx.ident.ident1.getText());
+                    // Se não for um registro, retorna o tipo
+                    if (ident.type != SymbolTable.Type.REGISTRO) {
+                        return ident.type;
+                    } else {
+                        // Se for um registro, retorna o tipo do último campo sendo acessado
+                        SymbolTable.Type type = SymbolTable.Type.REGISTRO;
+                        if (ctx.ident.pontos.size() > 0) {
+                            SymbolTable childTable = ident.childTable;
+                            for (var subIdent : ctx.ident.outrosIdent) {
+                                if (childTable == null) {
+                                    return SymbolTable.Type.INVALIDO;
+                                }
+                                if (!childTable.contains(subIdent.getText())) {
+                                    erroIdentificadorNaoDeclarado(ctx.getText(), ctx.getStart());
+                                    return SymbolTable.Type.INVALIDO;
+                                } else {
+                                    type = childTable.get(subIdent.getText()).type;
+                                    childTable = childTable.get(subIdent.getText()).childTable;
+                                }
+                            }
+                        }
+                        return type;
+                    }
                 }
             }
-
-            if (entry == null) {
-                erroIdentificadorNaoDeclarado(ctx.IDENT().getText(), ctx.IDENT().getSymbol());
-            } else {
-                // TODO: checar número de parâmetros e seus tipos
-            }
+            erroIdentificadorNaoDeclarado(ctx.ident.getText(), ctx.ident.getStart());
+            return SymbolTable.Type.INVALIDO;
         }
-        return super.visitParcela_unario(ctx);
+        else /* if (ctx.identFuncao != null) */ {
+            // TODO: tratar funções e procedimentos
+        }
+        return null;
+    }
+
+    @Override
+    public SymbolTable.Type visitCmdAtribuicao(AlgoritmicaParser.CmdAtribuicaoContext ctx) {
+        SymbolTable.Type identType = visitIdentificador(ctx.identificador());
+        if (identType == SymbolTable.Type.INVALIDO) {
+            erroIdentificadorNaoDeclarado(ctx.identificador().getText(), ctx.identificador().getStart());
+        }
+        return super.visitCmdAtribuicao(ctx);
+    }
+
+    @Override
+    public SymbolTable.Type visitCmdEscreva(AlgoritmicaParser.CmdEscrevaContext ctx) {
+        for (var expr : ctx.expressao()) {
+            visitExpressao(expr);
+        }
+
+        return null;
+    }
+
+    @Override
+    public SymbolTable.Type visitExpressao(AlgoritmicaParser.ExpressaoContext ctx) {
+        // Obtendo tipo da expressão do lado esquerdo
+        SymbolTable.Type lValue = visitTermo_logico(ctx.termo1);
+        if (lValue == SymbolTable.Type.INVALIDO) {
+            return SymbolTable.Type.INVALIDO;
+        }
+
+        // Para cada outro termo, verifica se é compatível
+        for (int i = 0; i < ctx.outrosTermos.size(); i++) {
+            SymbolTable.Type termType = visitTermo_logico( ctx.outrosTermos.get(i) );
+            if (termType == SymbolTable.Type.INVALIDO) {
+                return SymbolTable.Type.INVALIDO;
+            }
+
+            if (!Utils.isCompatibleType(lValue, termType)) {
+                return SymbolTable.Type.INVALIDO;
+            }
+
+            lValue = Utils.compatibleType(lValue, termType);
+        }
+
+        return lValue;
+    }
+
+    @Override
+    public SymbolTable.Type visitTermo_logico(AlgoritmicaParser.Termo_logicoContext ctx) {
+        // Obtendo tipo do termo do lado esquerdo
+        SymbolTable.Type lValue = visitFator_logico(ctx.fator1);
+        if (lValue == SymbolTable.Type.INVALIDO) {
+            return SymbolTable.Type.INVALIDO;
+        }
+
+        // Para cada outro termo, verifica se é compatível
+        for (int i = 0; i < ctx.outrosFatores.size(); i++) {
+            SymbolTable.Type termType = visitFator_logico( ctx.outrosFatores.get(i) );
+            if (termType == SymbolTable.Type.INVALIDO) {
+                return SymbolTable.Type.INVALIDO;
+            }
+
+            if (!Utils.isCompatibleType(lValue, termType)) {
+                return SymbolTable.Type.INVALIDO;
+            }
+
+            lValue = Utils.compatibleType(lValue, termType);
+        }
+
+        return lValue;
+    }
+
+    @Override
+    public SymbolTable.Type visitFator_logico(AlgoritmicaParser.Fator_logicoContext ctx) {
+        if (ctx.not != null) {
+            return SymbolTable.Type.LOGICO;
+        } else {
+            return visitParcela_logica(ctx.parcela_logica());
+        }
+    }
+
+    @Override
+    public SymbolTable.Type visitParcela_logica(AlgoritmicaParser.Parcela_logicaContext ctx) {
+        if (ctx.logica != null) {
+            return SymbolTable.Type.LOGICO;
+        } else {
+            return visitExp_relacional(ctx.exp_relacional());
+        }
+    }
+
+    @Override
+    public SymbolTable.Type visitExp_relacional(AlgoritmicaParser.Exp_relacionalContext ctx) {
+        // Obtendo tipo das expressões do lado esquerdo
+        SymbolTable.Type lValue = visitExp_aritmetica(ctx.expressao1);
+        if (lValue == SymbolTable.Type.INVALIDO) {
+            return SymbolTable.Type.INVALIDO;
+        }
+
+        // Para cada outra expressão, verifica se é compatível
+        for (int i = 0; i < ctx.outrasExpressoes.size(); i++) {
+            SymbolTable.Type termType = visitExp_aritmetica( ctx.outrasExpressoes.get(i) );
+            if (termType == SymbolTable.Type.INVALIDO) {
+                return SymbolTable.Type.INVALIDO;
+            }
+
+            if (!Utils.isCompatibleType(lValue, termType)) {
+                return SymbolTable.Type.INVALIDO;
+            }
+
+            lValue = Utils.compatibleType(lValue, termType);
+        }
+
+        return ctx.outrasExpressoes.size() > 0 ? SymbolTable.Type.LOGICO : lValue;
+    }
+
+    @Override
+    public SymbolTable.Type visitExp_aritmetica(AlgoritmicaParser.Exp_aritmeticaContext ctx) {
+        // Obtendo tipo do termo do lado esquerdo
+        SymbolTable.Type lValue = visitTermo(ctx.termo1);
+        if (lValue == SymbolTable.Type.INVALIDO) {
+            return SymbolTable.Type.INVALIDO;
+        }
+
+        // Para cada outro termo, verifica se é compatível
+        for (int i = 0; i < ctx.outrosTermos.size(); i++) {
+            SymbolTable.Type termType = visitTermo( ctx.outrosTermos.get(i) );
+            if (termType == SymbolTable.Type.INVALIDO) {
+                return SymbolTable.Type.INVALIDO;
+            }
+
+            if (!Utils.isCompatibleType(lValue, termType)) {
+                return SymbolTable.Type.INVALIDO;
+            }
+
+            lValue = Utils.compatibleType(lValue, termType);
+        }
+
+        return lValue;
+    }
+
+    @Override
+    public SymbolTable.Type visitTermo(AlgoritmicaParser.TermoContext ctx) {
+        // Obtendo tipo do fator do lado esquerdo
+        SymbolTable.Type lValue = visitFator(ctx.fator1);
+        if (lValue == SymbolTable.Type.INVALIDO) {
+            return SymbolTable.Type.INVALIDO;
+        }
+
+        // Para cada outro fator, verifica se é compatível
+        for (int i = 0; i < ctx.outrosFatores.size(); i++) {
+            SymbolTable.Type termType = visitFator( ctx.outrosFatores.get(i) );
+            if (termType == SymbolTable.Type.INVALIDO) {
+                return SymbolTable.Type.INVALIDO;
+            }
+
+            if (!Utils.isCompatibleType(lValue, termType)) {
+                return SymbolTable.Type.INVALIDO;
+            }
+
+            lValue = Utils.compatibleType(lValue, termType);
+        }
+
+        return lValue;
+    }
+
+    @Override
+    public SymbolTable.Type visitFator(AlgoritmicaParser.FatorContext ctx) {
+        // Obtendo tipo da parcela do lado esquerdo
+        SymbolTable.Type lValue = visitParcela(ctx.parcela1);
+        if (lValue == SymbolTable.Type.INVALIDO) {
+            return SymbolTable.Type.INVALIDO;
+        }
+
+        // Para cada outra parcela, verifica se é compatível
+        for (int i = 0; i < ctx.outrasParcelas.size(); i++) {
+            SymbolTable.Type termType = visitParcela( ctx.outrasParcelas.get(i) );
+            if (termType == SymbolTable.Type.INVALIDO) {
+                return SymbolTable.Type.INVALIDO;
+            }
+
+            if (!Utils.isCompatibleType(lValue, termType)) {
+                return SymbolTable.Type.INVALIDO;
+            }
+
+            lValue = Utils.compatibleType(lValue, termType);
+        }
+
+        return lValue;
     }
 
     public void erroIdentificadorDeclarado(String ident, Token tk) {
         Utils.addSemanticError(tk, String.format("identificador %s ja declarado anteriormente", ident));
+        scopeStack.print();
     }
 
     public void erroIdentificadorNaoDeclarado(String ident, Token tk) {
         Utils.addSemanticError(tk, String.format("identificador %s nao declarado", ident));
+        scopeStack.print();
     }
 
     public void erroTipoNaoDeclarado(String ident, Token tk) {
         Utils.addSemanticError(tk, String.format("tipo %s nao declarado", ident));
+        scopeStack.print();
     }
 }

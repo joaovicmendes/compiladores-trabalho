@@ -2,6 +2,7 @@ package br.ufscar.dc.compiladores.algoritmicacompiler;
 
 import br.ufscar.dc.compiladores.parser.AlgoritmicaLexer;
 import org.antlr.v4.runtime.Token;
+import org.antlr.v4.runtime.misc.Pair;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -75,5 +76,25 @@ public class Utils {
        lista de erros semânticos. */
     public static void addSemanticError(Token tk, String msg) {
         semanticErrors.add(String.format("Linha %d: %s", tk.getLine(), msg));
+    }
+
+    /* Função que retorna se dois tipos são compatíveis */
+    public static boolean isCompatibleType(SymbolTable.Type type1, SymbolTable.Type type2) {
+        return compatibleType(type1, type2) != SymbolTable.Type.INVALIDO;
+    }
+
+    /* Função que recebe dois tipos e retorna o super-tipo mínimo que englobe ambos */
+    public static SymbolTable.Type compatibleType(SymbolTable.Type type1, SymbolTable.Type type2) {
+        HashMap<Pair<SymbolTable.Type, SymbolTable.Type>, SymbolTable.Type> possibleCombinations = new HashMap<>() {{
+            put(new Pair<>(SymbolTable.Type.INTEIRO,  SymbolTable.Type.INTEIRO ), SymbolTable.Type.INTEIRO );
+            put(new Pair<>(SymbolTable.Type.INTEIRO,  SymbolTable.Type.REAL    ), SymbolTable.Type.REAL    );
+            put(new Pair<>(SymbolTable.Type.REAL,     SymbolTable.Type.REAL    ), SymbolTable.Type.REAL    );
+            put(new Pair<>(SymbolTable.Type.REAL,     SymbolTable.Type.INTEIRO ), SymbolTable.Type.REAL    );
+            put(new Pair<>(SymbolTable.Type.LITERAL,  SymbolTable.Type.LITERAL ), SymbolTable.Type.LITERAL );
+            put(new Pair<>(SymbolTable.Type.LOGICO,   SymbolTable.Type.LOGICO  ), SymbolTable.Type.LOGICO  );
+            put(new Pair<>(SymbolTable.Type.REGISTRO, SymbolTable.Type.REGISTRO), SymbolTable.Type.REGISTRO);
+        }};
+
+        return possibleCombinations.getOrDefault(new Pair<>(type1, type2), SymbolTable.Type.INVALIDO);
     }
 }

@@ -42,4 +42,8 @@ public class SymbolTable {
     public SymbolTableEntry get(String key) {
         return this.table.getOrDefault(key, null);
     }
+
+    public void print() {
+        table.keySet().forEach(key -> table.get(key).print());
+    }
 }

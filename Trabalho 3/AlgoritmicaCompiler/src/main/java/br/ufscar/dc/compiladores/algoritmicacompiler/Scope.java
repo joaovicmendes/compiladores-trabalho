@@ -26,4 +26,11 @@ public class Scope {
     public List<SymbolTable> toList() {
         return tableStack;
     }
+
+    public void print() {
+        for (int i = 0; i < tableStack.size(); i++) {
+            System.out.println("Tabela " + i);
+            tableStack.get(i).print();
+        }
+    }
 }
