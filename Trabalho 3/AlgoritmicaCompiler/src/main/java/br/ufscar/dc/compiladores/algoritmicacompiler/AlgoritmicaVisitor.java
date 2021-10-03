@@ -350,10 +350,17 @@ public class AlgoritmicaVisitor extends AlgoritmicaBaseVisitor<SymbolTable.Type>
         SymbolTable.Type identType = visitIdentificador(ctx.identificador());
         if (identType == null) {
             erroIdentificadorNaoDeclarado(ctx.identificador().getText(), ctx.identificador().getStart());
+            return null;
         }
 
         SymbolTable.Type exprType = visitExpressao(ctx.expressao());
-
+        if (!Utils.isCompatibleType(identType, exprType)) {
+            if (ctx.isPointer != null) {
+                erroIncompatibilidadeAtribuicaoPonteiro(ctx.identificador().getText(), ctx.identificador().getStart());
+            } else {
+                erroIncompatibilidadeAtribuicao(ctx.identificador().getText(), ctx.identificador().getStart());
+            }
+        }
 
         return null;
     }
@@ -388,7 +395,6 @@ public class AlgoritmicaVisitor extends AlgoritmicaBaseVisitor<SymbolTable.Type>
 
             lValue = Utils.compatibleType(lValue, termType);
         }
-
         return lValue;
     }
 
@@ -542,7 +548,7 @@ public class AlgoritmicaVisitor extends AlgoritmicaBaseVisitor<SymbolTable.Type>
 
         SymbolTable currentScope = scopeStack.top();
         SymbolTable structTable = null;
-        if (paramType != SymbolTable.Type.REGISTRO) {
+        if (paramType == SymbolTable.Type.REGISTRO) {
             for (var scope : scopeStack.toList()) {
                 if (scope.contains(ctx.tipo_estendido().getText())) {
                     structTable = scope.get(ctx.tipo_estendido().getText()).childTable;
@@ -557,6 +563,15 @@ public class AlgoritmicaVisitor extends AlgoritmicaBaseVisitor<SymbolTable.Type>
         }
 
         return paramType;
+    }
+
+    @Override
+    public SymbolTable.Type visitParcela_nao_unario(AlgoritmicaParser.Parcela_nao_unarioContext ctx) {
+        if (ctx.identificador() != null) {
+            return visitIdentificador(ctx.identificador());
+        } else {
+            return SymbolTable.Type.LITERAL;
+        }
     }
 
     @Override
@@ -585,5 +600,13 @@ public class AlgoritmicaVisitor extends AlgoritmicaBaseVisitor<SymbolTable.Type>
 
     public void erroRetorneForaDeEscopo(Token tk) {
         Utils.addSemanticError(tk, "comando retorne nao permitido nesse escopo");
+    }
+
+    public void erroIncompatibilidadeAtribuicao(String ident, Token tk) {
+        Utils.addSemanticError(tk, String.format("atribuicao nao compativel para %s", ident));
+    }
+
+    public void erroIncompatibilidadeAtribuicaoPonteiro(String ident, Token tk) {
+        Utils.addSemanticError(tk, String.format("atribuicao nao compativel para ^%s", ident));
     }
 }

@@ -155,7 +155,7 @@ cmdEnquanto: 'enquanto' expressao 'faca' cmd* 'fim_enquanto';
 
 cmdFaca: 'faca' cmd* 'ate' expressao;
 
-cmdAtribuicao: '^'? identificador '<-' expressao;
+cmdAtribuicao: isPointer='^'? identificador '<-' expressao;
 
 cmdChamada: IDENT '(' expressao (',' expressao)* ')';
 
