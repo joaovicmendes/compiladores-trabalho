@@ -2,6 +2,7 @@ package br.ufscar.dc.compiladores.algoritmicacompiler;
 
 import br.ufscar.dc.compiladores.parser.AlgoritmicaBaseVisitor;
 import br.ufscar.dc.compiladores.parser.AlgoritmicaParser;
+import jdk.jshell.execution.Util;
 import org.antlr.v4.runtime.Token;
 
 import java.util.HashSet;
@@ -13,6 +14,7 @@ public class AlgoritmicaVisitor extends AlgoritmicaBaseVisitor<SymbolTable.Type>
     HashSet<String> constants = new HashSet<>();
     RoutineTable routines = new RoutineTable();
     List<SymbolTable.Type> routineParams = new LinkedList<>();
+    boolean inRoutine = false;
 
     @Override
     public SymbolTable.Type visitDeclaracao_local(AlgoritmicaParser.Declaracao_localContext ctx) {
@@ -108,6 +110,7 @@ public class AlgoritmicaVisitor extends AlgoritmicaBaseVisitor<SymbolTable.Type>
             routines.add(ident, returnType, new LinkedList<>(routineParams));
 
             scopeStack.push();
+            inRoutine = true;
             for (var decl : ctx.declaracao_local()) {
                 visitDeclaracao_local(decl);
             }
@@ -115,6 +118,7 @@ public class AlgoritmicaVisitor extends AlgoritmicaBaseVisitor<SymbolTable.Type>
                 visitCmd(cmd);
             }
             scopeStack.pop();
+            inRoutine = false;
             return SymbolTable.Type.FUNCAO;
 
         }
@@ -555,6 +559,14 @@ public class AlgoritmicaVisitor extends AlgoritmicaBaseVisitor<SymbolTable.Type>
         return paramType;
     }
 
+    @Override
+    public SymbolTable.Type visitCmdRetorne(AlgoritmicaParser.CmdRetorneContext ctx) {
+        if (!inRoutine) {
+            erroRetorneForaDeEscopo(ctx.getStart());
+        }
+        return null;
+    }
+
     public void erroIdentificadorDeclarado(String ident, Token tk) {
         Utils.addSemanticError(tk, String.format("identificador %s ja declarado anteriormente", ident));
     }
@@ -569,5 +581,9 @@ public class AlgoritmicaVisitor extends AlgoritmicaBaseVisitor<SymbolTable.Type>
 
     public void erroIncompatibilidadeParametros(String ident, Token tk) {
         Utils.addSemanticError(tk, String.format("incompatibilidade de parametros na chamada de %s", ident));
+    }
+
+    public void erroRetorneForaDeEscopo(Token tk) {
+        Utils.addSemanticError(tk, "comando retorne nao permitido nesse escopo");
     }
 }
