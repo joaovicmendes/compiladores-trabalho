@@ -4,10 +4,13 @@ import br.ufscar.dc.compiladores.parser.AlgoritmicaBaseVisitor;
 import br.ufscar.dc.compiladores.parser.AlgoritmicaParser;
 import jdk.jshell.execution.Util;
 
+import java.util.List;
+
 public class CodeGenerationVisitor extends AlgoritmicaBaseVisitor<SymbolTable.Type> {
     Scope scopeStack = new Scope();
     StringBuilder outputCode = new StringBuilder();
     RoutineTable routines = new RoutineTable();
+    boolean isRoutine = false;
 
     @Override
     public SymbolTable.Type visitPrograma(AlgoritmicaParser.ProgramaContext ctx) {
@@ -74,7 +77,6 @@ public class CodeGenerationVisitor extends AlgoritmicaBaseVisitor<SymbolTable.Ty
     @Override
     public SymbolTable.Type visitIdentificador(AlgoritmicaParser.IdentificadorContext ctx) {
         outputCode.append(ctx.ident1.getText());
-
         for (var ident : ctx.outrosIdent) {
             outputCode.append(".");
             outputCode.append(ident.getText());
@@ -136,19 +138,19 @@ public class CodeGenerationVisitor extends AlgoritmicaBaseVisitor<SymbolTable.Ty
     @Override
     public SymbolTable.Type visitTipo_basico(AlgoritmicaParser.Tipo_basicoContext ctx) {
         if (ctx.literal != null) {
-            outputCode.append("char");
+            outputCode.append("char ");
             return SymbolTable.Type.LITERAL;
         }
         else if (ctx.inteiro != null) {
-            outputCode.append("int");
+            outputCode.append("int ");
             return SymbolTable.Type.INTEIRO;
         }
         else if (ctx.real != null) {
-            outputCode.append("double");
+            outputCode.append("double ");
             return SymbolTable.Type.REAL;
         }
         else if (ctx.logico != null) {
-            outputCode.append("bool");
+            outputCode.append("int ");
             return SymbolTable.Type.LOGICO;
         }
         return null;
@@ -174,6 +176,10 @@ public class CodeGenerationVisitor extends AlgoritmicaBaseVisitor<SymbolTable.Ty
     public SymbolTable.Type visitTipo_estendido(AlgoritmicaParser.Tipo_estendidoContext ctx) {
         SymbolTable.Type type = visitTipo_basico_ident(ctx.tipo_basico_ident());
         if (ctx.isPointer != null) {
+            outputCode.append(" *");
+        }
+
+        if (isRoutine && TypeChecker.check(ctx.tipo_basico_ident(), scopeStack) != SymbolTable.Type.LITERAL) {
             outputCode.append(" *");
         }
 
@@ -378,6 +384,11 @@ public class CodeGenerationVisitor extends AlgoritmicaBaseVisitor<SymbolTable.Ty
                 }
             }
         }
+        else if (ctx.expParentesis != null) {
+            outputCode.append("(");
+            visitExpressao(ctx.expParentesis);
+            outputCode.append(")");
+        }
         return null;
     }
 
@@ -431,6 +442,268 @@ public class CodeGenerationVisitor extends AlgoritmicaBaseVisitor<SymbolTable.Ty
         }
 
         outputCode.append("}\n");
+        return null;
+    }
+
+    @Override
+    public SymbolTable.Type visitItem_selecao(AlgoritmicaParser.Item_selecaoContext ctx) {
+        List<String> ranges = Utils.getRange(ctx.constantes());
+        for (int i=0; i < ranges.size(); i += 2) {
+            int begin = Integer.parseInt(ranges.get(i));
+            if (ranges.get(i+1).equals("-")) {
+                outputCode.append("case ");
+                outputCode.append(begin);
+                outputCode.append(":\n");
+            } else {
+                int end = Integer.parseInt(ranges.get(i+1));
+                for (int j=begin; j < end; j++) {
+                    outputCode.append("case ");
+                    outputCode.append(j);
+                    outputCode.append(":\n");
+                }
+            }
+        }
+        for (var cmd : ctx.cmd()) {
+            visitCmd(cmd);
+        }
+        if (ctx.cmd().size() > 0) {
+            outputCode.append("break;\n");
+        }
+        return null;
+    }
+
+    @Override
+    public SymbolTable.Type visitCmdPara(AlgoritmicaParser.CmdParaContext ctx) {
+        outputCode.append("for (");
+        outputCode.append(ctx.IDENT().getText());
+        outputCode.append("=");
+        visitExp_aritmetica(ctx.exp1);
+        outputCode.append("; ");
+        outputCode.append(ctx.IDENT().getText());
+        outputCode.append("<=");
+        visitExp_aritmetica(ctx.exp2);
+        outputCode.append("; ");
+        outputCode.append(ctx.IDENT().getText());
+        outputCode.append("++) {\n");
+        for (var cmd : ctx.cmd()) {
+            visitCmd(cmd);
+        }
+        outputCode.append("}\n");
+        return null;
+    }
+
+    @Override
+    public SymbolTable.Type visitCmdEnquanto(AlgoritmicaParser.CmdEnquantoContext ctx) {
+        outputCode.append("while (");
+        visitExpressao(ctx.expressao());
+        outputCode.append(") {\n");
+        for (var cmd : ctx.cmd()) {
+            visitCmd(cmd);
+        }
+        outputCode.append("}\n");
+        return null;
+    }
+
+    @Override
+    public SymbolTable.Type visitCmdFaca(AlgoritmicaParser.CmdFacaContext ctx) {
+        outputCode.append("do {\n");
+        for (var cmd : ctx.cmd()) {
+            visitCmd(cmd);
+        }
+        outputCode.append("} while (");
+        visitExpressao(ctx.expressao());
+        outputCode.append(");\n");
+        return null;
+    }
+
+    @Override
+    public SymbolTable.Type visitParcela_nao_unario(AlgoritmicaParser.Parcela_nao_unarioContext ctx) {
+        if (ctx.isAddress != null) {
+            outputCode.append("&");
+        }
+        if (ctx.identificador() != null) {
+            return visitIdentificador(ctx.identificador());
+        }
+        else if (ctx.CADEIA() != null) {
+            outputCode.append(ctx.CADEIA().getText());
+            return SymbolTable.Type.LITERAL;
+        }
+        return null;
+    }
+
+    @Override
+    public SymbolTable.Type visitValor_constante(AlgoritmicaParser.Valor_constanteContext ctx) {
+        if (ctx.CADEIA() != null) {
+            outputCode.append(ctx.CADEIA().getText());
+            return SymbolTable.Type.LITERAL;
+        }
+        else if (ctx.NUM_INT() != null) {
+            outputCode.append(ctx.NUM_INT().getText());
+            return SymbolTable.Type.INTEIRO;
+        }
+        else if (ctx.NUM_REAL() != null) {
+            outputCode.append(ctx.NUM_REAL().getText());
+            return SymbolTable.Type.REAL;
+        }
+        else if (ctx.verdadeiro != null) {
+            outputCode.append("1");
+            return SymbolTable.Type.LOGICO;
+        }
+        else if (ctx.falso != null) {
+            outputCode.append("0");
+            return SymbolTable.Type.LOGICO;
+        }
+        return null;
+    }
+
+    @Override
+    public SymbolTable.Type visitRegistro(AlgoritmicaParser.RegistroContext ctx) {
+        outputCode.append("struct {\n");
+        for (var v : ctx.variavel()) {
+            visitVariavel(v);
+            outputCode.append(";\n");
+        }
+        outputCode.append("}");
+        return SymbolTable.Type.REGISTRO;
+    }
+
+    @Override
+    public SymbolTable.Type visitDeclaracao_global(AlgoritmicaParser.Declaracao_globalContext ctx) {
+        isRoutine = true;
+        outputCode.append("\n");
+        if (ctx.isFunction != null) {
+            SymbolTable.Type type = visitTipo_estendido(ctx.tipo_estendido());
+            outputCode.append(" ");
+            outputCode.append(ctx.IDENT().getText());
+            scopeStack.top().add(ctx.IDENT().getText(), type);
+
+            scopeStack.push();
+            outputCode.append("(");
+            if (ctx.parametros() != null) {
+                visitParametros(ctx.parametros());
+            }
+            outputCode.append(") {\n");
+
+            for (var decl : ctx.declaracao_local()) {
+                visitDeclaracao_local(decl);
+                outputCode.append("\n");
+            }
+            for (var cmd : ctx.cmd()) {
+                visitCmd(cmd);
+                outputCode.append(";\n");
+            }
+            outputCode.append("}\n");
+            scopeStack.pop();
+        }
+        else if (ctx.isProcedure != null) {
+            outputCode.append("void ");
+            outputCode.append(ctx.IDENT().getText());
+            scopeStack.top().add(ctx.IDENT().getText(), SymbolTable.Type.PROCEDIMENTO);
+
+            scopeStack.push();
+            outputCode.append("(");
+            if (ctx.parametros() != null) {
+                visitParametros(ctx.parametros());
+            }
+            outputCode.append(") {\n");
+
+            for (var decl : ctx.declaracao_local()) {
+                visitDeclaracao_local(decl);
+                outputCode.append("\n");
+            }
+            for (var cmd : ctx.cmd()) {
+                visitCmd(cmd);
+                outputCode.append(";\n");
+            }
+            outputCode.append("}\n");
+            scopeStack.pop();
+        }
+
+        isRoutine = false;
+        return null;
+    }
+
+    @Override
+    public SymbolTable.Type visitParametro(AlgoritmicaParser.ParametroContext ctx) {
+        SymbolTable.Type type = visitTipo_estendido(ctx.tipo_estendido());
+        outputCode.append(" ");
+        visitIdentificador(ctx.identificador().get(0));
+        scopeStack.top().add(ctx.identificador().get(0).getText(), type);
+        for (int i = 1; i < ctx.identificador().size(); i++) {
+            visitIdentificador(ctx.identificador().get(i));
+            scopeStack.top().add(ctx.identificador().get(i).getText(), type);
+        }
+        return null;
+    }
+
+    @Override
+    public SymbolTable.Type visitCmdChamada(AlgoritmicaParser.CmdChamadaContext ctx) {
+        outputCode.append(ctx.IDENT().getText());
+        outputCode.append("(");
+        visitExpressao(ctx.expressao().get(0));
+        for (int i = 1; i < ctx.expressao().size(); i++) {
+            outputCode.append(", ");
+            visitExpressao(ctx.expressao().get(i));
+        }
+        outputCode.append(");\n");
+        for (var scope : scopeStack.toList()) {
+            if (scope.contains(ctx.IDENT().getText())) {
+                return scope.get(ctx.IDENT().getText()).type;
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public SymbolTable.Type visitCmdEscreva(AlgoritmicaParser.CmdEscrevaContext ctx) {
+        outputCode.append("printf(\"");
+        for (var exp : ctx.expressao()) {
+            SymbolTable.Type type = TypeChecker.check(exp, scopeStack);
+            outputCode.append(Utils.mapTypeToLetter(type));
+        }
+        outputCode.append("\", ");
+        for (int i = 0; i < ctx.expressao().size(); i++) {
+//            outputCode.append(ctx.expressao().get(i).getText());
+            visitExpressao(ctx.expressao(i));
+            if (i != ctx.expressao().size()-1)
+                outputCode.append(", ");
+        }
+        outputCode.append(");\n");
+        return null;
+    }
+
+    @Override
+    public SymbolTable.Type visitCmdLeia(AlgoritmicaParser.CmdLeiaContext ctx) {
+        for (var ident : ctx.identificador()) {
+            SymbolTable.Type type = TypeChecker.check(ident, scopeStack);
+            if (type == SymbolTable.Type.LITERAL) {
+                outputCode.append("gets(");
+                outputCode.append(ident.getText());
+            } else {
+                outputCode.append("scanf(\"");
+                outputCode.append(Utils.mapTypeToLetter(type));
+                outputCode.append("\", &");
+                visitIdentificador(ident);
+            }
+        }
+        outputCode.append(");\n");
+        return null;
+    }
+
+    @Override
+    public SymbolTable.Type visitDimensao(AlgoritmicaParser.DimensaoContext ctx) {
+        for (var exp : ctx.exp_aritmetica()) {
+            outputCode.append("[");
+            visitExp_aritmetica(exp);
+            outputCode.append("]");
+        }
+        return null;
+    }
+
+    @Override
+    public SymbolTable.Type visitCmdRetorne(AlgoritmicaParser.CmdRetorneContext ctx) {
+        outputCode.append("return ");
+        visitExpressao(ctx.expressao());
         return null;
     }
 }

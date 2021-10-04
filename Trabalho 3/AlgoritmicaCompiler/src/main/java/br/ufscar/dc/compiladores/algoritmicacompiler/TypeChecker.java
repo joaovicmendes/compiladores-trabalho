@@ -114,7 +114,7 @@ public class TypeChecker {
         for (var scope : scopeStack.toList()) {
             if (scope.contains(ctx.ident1.getText())) {
                 SymbolTableEntry ident = scope.get(ctx.ident1.getText());
-                SymbolTable.Type type = SymbolTable.Type.REGISTRO;
+                SymbolTable.Type type = ident.type;
                 if (ctx.pontos.size() > 0) {
                     SymbolTable childTable = ident.childTable;
                     for (var subIdent : ctx.outrosIdent) {
