@@ -149,7 +149,7 @@ cmdSe: 'se' expressao 'entao' cmd* ('senao' cmd*)? 'fim_se';
 
 cmdCaso: 'caso' exp_aritmetica 'seja' selecao (def='senao' cmd*)? 'fim_caso';
 
-cmdPara: 'para' IDENT '<-' exp_aritmetica 'ate' exp_aritmetica 'faca' cmd* 'fim_para';
+cmdPara: 'para' IDENT '<-' exp1=exp_aritmetica 'ate' exp2=exp_aritmetica 'faca' cmd* 'fim_para';
 
 cmdEnquanto: 'enquanto' expressao 'faca' cmd* 'fim_enquanto';
 
@@ -167,7 +167,7 @@ item_selecao: constantes ':' cmd*;
 
 constantes: numero_intervalo (',' numero_intervalo)*;
 
-numero_intervalo: op_unario? NUM_INT ('..' op_unario? NUM_INT)?;
+numero_intervalo: op_unario? begin=NUM_INT ('..' op_unario? end=NUM_INT)?;
 
 op_unario: '-';
 
@@ -191,7 +191,7 @@ parcela_unario: isPointer='^'? ident=identificador
                 | NUM_REAL
                 | '(' expParentesis=expressao ')';
 
-parcela_nao_unario: '&' identificador | CADEIA;
+parcela_nao_unario: isAddress='&' identificador | CADEIA;
 
 exp_relacional: expressao1=exp_aritmetica (operadores+=op_relacional outrasExpressoes+=exp_aritmetica)?;
 

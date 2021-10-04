@@ -68,6 +68,14 @@ public class Utils {
         put("logico", SymbolTable.Type.LOGICO);
     }};
 
+    /* Conjunto que mapeia os tipos da linguagem para as letras em C. */
+    private static final Map<SymbolTable.Type, String> letterMap = new HashMap<>() {{
+        put(SymbolTable.Type.LITERAL, "%s");
+        put(SymbolTable.Type.INTEIRO, "%d");
+        put(SymbolTable.Type.REAL,   "%lf");
+        put(SymbolTable.Type.LOGICO,  "%d");
+    }};
+
     /* Função que recebe uma String e retorna o tipo equivalente. */
     public static SymbolTable.Type mapStrToType(String type) {
         return typeMap.getOrDefault(type, SymbolTable.Type.INVALIDO);
@@ -97,5 +105,24 @@ public class Utils {
         }};
 
         return possibleCombinations.getOrDefault(new Pair<>(type1, type2), SymbolTable.Type.INVALIDO);
+    }
+
+    /* Retorna uma lista de intervalos */
+    public static List<String> getRange(AlgoritmicaParser.ConstantesContext ctx){
+        List<String> ranges = new ArrayList<>();
+        for (var range : ctx.numero_intervalo()) {
+            ranges.add(range.begin.getText());
+            if (range.end != null) {
+                ranges.add(range.end.getText());
+            } else {
+                ranges.add("-");
+            }
+        }
+        return ranges;
+    }
+
+    /* Função que recebe um tipo e retorna a letra em C equivalente. */
+    public static String mapTypeToLetter(SymbolTable.Type type) {
+        return letterMap.getOrDefault(type, "");
     }
 }
