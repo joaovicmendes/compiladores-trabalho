@@ -2,7 +2,6 @@ package br.ufscar.dc.compiladores.algoritmicacompiler;
 
 import br.ufscar.dc.compiladores.parser.AlgoritmicaBaseVisitor;
 import br.ufscar.dc.compiladores.parser.AlgoritmicaParser;
-import jdk.jshell.execution.Util;
 import org.antlr.v4.runtime.Token;
 
 import java.util.HashSet;
@@ -434,7 +433,7 @@ public class AlgoritmicaVisitor extends AlgoritmicaBaseVisitor<SymbolTable.Type>
 
     @Override
     public SymbolTable.Type visitParcela_logica(AlgoritmicaParser.Parcela_logicaContext ctx) {
-        if (ctx.logica != null) {
+        if (ctx.v != null || ctx.f != null) {
             return SymbolTable.Type.LOGICO;
         } else {
             return visitExp_relacional(ctx.exp_relacional());

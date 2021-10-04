@@ -123,7 +123,7 @@ tipo_basico: literal='literal' | inteiro='inteiro' | real='real' | logico='logic
 
 tipo_basico_ident: tipo_basico | IDENT;
 
-tipo_estendido: '^'? tipo_basico_ident;
+tipo_estendido: isPointer='^'? tipo_basico_ident;
 
 valor_constante: CADEIA | NUM_INT | NUM_REAL | verdadeiro='verdadeiro' | falso='falso';
 
@@ -147,7 +147,7 @@ cmdEscreva: 'escreva' '(' expressao (',' expressao)* ')';
 
 cmdSe: 'se' expressao 'entao' cmd* ('senao' cmd*)? 'fim_se';
 
-cmdCaso: 'caso' exp_aritmetica 'seja' selecao ('senao' cmd*)? 'fim_caso';
+cmdCaso: 'caso' exp_aritmetica 'seja' selecao (def='senao' cmd*)? 'fim_caso';
 
 cmdPara: 'para' IDENT '<-' exp_aritmetica 'ate' exp_aritmetica 'faca' cmd* 'fim_para';
 
@@ -195,7 +195,7 @@ parcela_nao_unario: '&' identificador | CADEIA;
 
 exp_relacional: expressao1=exp_aritmetica (operadores+=op_relacional outrasExpressoes+=exp_aritmetica)?;
 
-op_relacional: '=' | '<>' | '>=' | '<=' | '>' | '<';
+op_relacional: eq='=' | neq='<>' | geq='>=' | leq='<=' | gr='>' | le='<';
 
 expressao: termo1=termo_logico (operadores+=op_logico_1 outrosTermos+=termo_logico)*;
 
@@ -203,7 +203,7 @@ termo_logico: fator1=fator_logico (operadores+=op_logico_2 outrosFatores+=fator_
 
 fator_logico: not='nao'? parcela_logica;
 
-parcela_logica: logica=('verdadeiro' | 'falso')
+parcela_logica: (v='verdadeiro' | f='falso')
                 | exp_relacional;
 
 op_logico_1: 'ou';
