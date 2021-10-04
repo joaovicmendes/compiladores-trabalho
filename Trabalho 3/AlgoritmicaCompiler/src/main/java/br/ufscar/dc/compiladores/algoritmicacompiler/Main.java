@@ -43,9 +43,16 @@ public class Main {
             AlgoritmicaVisitor semantic = new AlgoritmicaVisitor();
             semantic.visitPrograma(tree);
 
-            // Imprimindo erros
-            Utils.semanticErrors.forEach(writer::println);
-            writer.println("Fim da compilacao");
+            if (!Utils.semanticErrors.isEmpty()) {
+                // Imprimindo erros
+                Utils.semanticErrors.forEach(writer::println);
+                writer.println("Fim da compilacao");
+            } else {
+                // Gerando código C
+                CodeGenerationVisitor generator = new CodeGenerationVisitor();
+                generator.visitPrograma(tree);
+                writer.println(generator.outputCode.toString());
+            }
         } catch (IOException exception) {
             System.out.println("Erro: Não foi possível abrir o arquivo '" + args[1] + "'");
         } catch (ParseCancellationException ignored) {}

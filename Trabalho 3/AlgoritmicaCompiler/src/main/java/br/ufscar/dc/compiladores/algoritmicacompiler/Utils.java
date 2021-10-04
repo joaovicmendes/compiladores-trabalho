@@ -1,6 +1,7 @@
 package br.ufscar.dc.compiladores.algoritmicacompiler;
 
 import br.ufscar.dc.compiladores.parser.AlgoritmicaLexer;
+import br.ufscar.dc.compiladores.parser.AlgoritmicaParser;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.misc.Pair;
 
