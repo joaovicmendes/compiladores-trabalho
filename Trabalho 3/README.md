@@ -28,8 +28,6 @@ java -jar target/AlgoritmicaCompiler-1.0-SNAPSHOT-jar-with-dependencies.jar <ent
 ```
 
 ## Estruturação do código
-
-## Estruturação do código
 O trabalho 3 possui os seguintes arquivos importantes.
 - [`AlgoritmicaVisitor.java`](): visitante responsável por fazer a análise semântica do programa e reportar erros.
 - [`CodeGenerationVisitor.java`](): visitante responsável por gerar código C a partir do programa em linguagem Algoritmica.
