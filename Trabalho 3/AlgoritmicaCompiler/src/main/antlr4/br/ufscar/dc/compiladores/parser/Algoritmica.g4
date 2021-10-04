@@ -145,7 +145,7 @@ cmdLeia: 'leia' '(' '^'? identificador (',' '^'? identificador)* ')';
 
 cmdEscreva: 'escreva' '(' expressao (',' expressao)* ')';
 
-cmdSe: 'se' expressao 'entao' cmd* ('senao' cmd*)? 'fim_se';
+cmdSe: 'se' expressao 'entao' cmdIf+=cmd* (senao='senao' cmdElse+=cmd*)? 'fim_se';
 
 cmdCaso: 'caso' exp_aritmetica 'seja' selecao (def='senao' cmd*)? 'fim_caso';
 

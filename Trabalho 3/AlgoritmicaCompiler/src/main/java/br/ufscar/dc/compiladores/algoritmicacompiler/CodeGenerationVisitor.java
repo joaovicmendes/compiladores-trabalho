@@ -18,10 +18,12 @@ public class CodeGenerationVisitor extends AlgoritmicaBaseVisitor<SymbolTable.Ty
 
         outputCode.append("#include <stdio.h>\n");
         outputCode.append("#include <stdlib.h>\n");
+        outputCode.append("#include <string.h>\n");
+        outputCode.append("#include <math.h>\n");
 
         visitDeclaracoes(ctx.declaracoes());
 
-        outputCode.append("void main() {\n");
+        outputCode.append("int main() {\n");
 
         scopeStack.push();
         visitCorpo(ctx.corpo());
@@ -117,7 +119,7 @@ public class CodeGenerationVisitor extends AlgoritmicaBaseVisitor<SymbolTable.Ty
                 structTable = scope.get(ctx.tipo().getText()).childTable;
             }
         }
-        scopeStack.top().add(ctx.identificador().get(0).getText(), type, structTable);
+        scopeStack.top().add(ctx.identificador().get(0).ident1.getText(), type, structTable);
         visitIdentificador(ctx.identificador().get(0));
         if (type == SymbolTable.Type.LITERAL) {
             outputCode.append("[80]");
@@ -131,7 +133,6 @@ public class CodeGenerationVisitor extends AlgoritmicaBaseVisitor<SymbolTable.Ty
                 outputCode.append("[80]");
             }
         }
-
         return null;
     }
 
@@ -163,6 +164,7 @@ public class CodeGenerationVisitor extends AlgoritmicaBaseVisitor<SymbolTable.Ty
         }
         else if (ctx.IDENT() != null) {
             outputCode.append(ctx.IDENT().getText());
+            outputCode.append(" ");
             for (var scope : scopeStack.toList()) {
                 if (scope.contains(ctx.IDENT().getText())) {
                     return scope.get(ctx.IDENT().getText()).type;
@@ -176,11 +178,11 @@ public class CodeGenerationVisitor extends AlgoritmicaBaseVisitor<SymbolTable.Ty
     public SymbolTable.Type visitTipo_estendido(AlgoritmicaParser.Tipo_estendidoContext ctx) {
         SymbolTable.Type type = visitTipo_basico_ident(ctx.tipo_basico_ident());
         if (ctx.isPointer != null) {
-            outputCode.append(" *");
+            outputCode.append("*");
         }
 
-        if (isRoutine && TypeChecker.check(ctx.tipo_basico_ident(), scopeStack) != SymbolTable.Type.LITERAL) {
-            outputCode.append(" *");
+        if (isRoutine && TypeChecker.check(ctx.tipo_basico_ident(), scopeStack) == SymbolTable.Type.LITERAL) {
+            outputCode.append("*");
         }
 
         return type;
@@ -419,11 +421,19 @@ public class CodeGenerationVisitor extends AlgoritmicaBaseVisitor<SymbolTable.Ty
         visitExpressao(ctx.expressao());
         outputCode.append(") {\n");
 
-        for (var cmd : ctx.cmd()) {
+        for (var cmd : ctx.cmdIf) {
             visitCmd(cmd);
         }
 
         outputCode.append("}\n");
+
+        if (ctx.senao != null) {
+            outputCode.append("else {\n");
+            for (var cmd : ctx.cmdElse) {
+                visitCmd(cmd);
+            }
+            outputCode.append("}\n");
+        }
         return null;
     }
 
@@ -573,7 +583,6 @@ public class CodeGenerationVisitor extends AlgoritmicaBaseVisitor<SymbolTable.Ty
         outputCode.append("\n");
         if (ctx.isFunction != null) {
             SymbolTable.Type type = visitTipo_estendido(ctx.tipo_estendido());
-            outputCode.append(" ");
             outputCode.append(ctx.IDENT().getText());
             scopeStack.top().add(ctx.IDENT().getText(), type);
 
@@ -663,7 +672,7 @@ public class CodeGenerationVisitor extends AlgoritmicaBaseVisitor<SymbolTable.Ty
         }
         outputCode.append("\", ");
         for (int i = 0; i < ctx.expressao().size(); i++) {
-//            outputCode.append(ctx.expressao().get(i).getText());
+            // outputCode.append(ctx.expressao().get(i).getText());
             visitExpressao(ctx.expressao(i));
             if (i != ctx.expressao().size()-1)
                 outputCode.append(", ");
