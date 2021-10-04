@@ -2,7 +2,7 @@
 O Trabalho 3 da disciplina consiste em implementar um Analisador Semântico e Gerador de Código C para a [Linguagem Algoritmica](https://github.com/joaovicmendes/compiladores-trabalho/blob/main/Trabalho%201/Gram%C3%A1tica%20LA.pdf). Mais detalhes na [específicação]() do projeto.
 
 ## Atenção
-O trabalho enviado no dia limite (03/10) é [este aqui](https://github.com/joaovicmendes/compiladores-trabalho/tree/79da692d36eb750776019896ccba251ff6deff82). Ele passa em todos os casos do analisador semântico, mas não gera código em C equivalente. O trabalho de fato foi finalizado dia 04/10.
+O trabalho enviado no dia limite (03/10) é [este aqui](https://github.com/joaovicmendes/compiladores-trabalho/tree/58dea81afc9fd7db41f2a266351b174fbc430f8b). Ele passa em todos os casos do analisador semântico, mas não gera código em C equivalente. O trabalho de fato foi finalizado dia 04/10.
 
 ## Grupo
 - [Guilherme Lorençato](https://github.com/GuiLorencato), 758665
